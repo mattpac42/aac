@@ -1,0 +1,38 @@
+# Add your project-specific ignores below this line
+.DS_Store
+.env
+new-token.txt
+
+# Artifacts (stored on Windows D: drive, not in git)
+artifacts/
+
+# Temporary files
+/tmp/
+*.tmp
+*.log
+
+# Credentials
+credentials
+*.pem
+*.key
+/etc/samba/credentials
+
+# OpenSCAP reports (stored as artifacts)
+*.html
+*.xml
+results/
+reports/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
