@@ -17,16 +17,7 @@
        "hooks": [
          {
            "type": "command",
-           "command": "powershell.exe -Command \"(New-Object Media.SoundPlayer (Resolve-Path '.claude\\audio\\completion.wav')).PlaySync()\""
-         }
-       ]
-     },
-     {
-       "matcher": "",
-       "hooks": [
-         {
-           "type": "command",
-           "command": "afplay .claude/audio/completion.wav 2>/dev/null || true"
+           "command": "./.claude/hooks/completion-one-liners.sh 2>/dev/null || true"
          }
        ]
      }
