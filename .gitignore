@@ -18,10 +18,14 @@ credentials
 /etc/samba/credentials
 
 # OpenSCAP reports (stored as artifacts)
-*.html
+# *.html - removed, was blocking application/index.html
 *.xml
 results/
 reports/
+
+# Allow application source files
+!application/index.html
+!application/**/*.html
 
 # Python
 __pycache__/
