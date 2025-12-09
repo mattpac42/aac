@@ -101,6 +101,141 @@ The main Claude agent's role is to:
 
 **The main agent is an orchestrator, not an implementer. Period.**
 
+## 🚀 PARALLEL AGENT EXECUTION - BEST PRACTICE
+
+**⚡ RECOMMENDED APPROACH**: When multiple independent tasks exist, invoke multiple agents in a SINGLE message to maximize efficiency.
+
+### Core Principle
+
+**DO NOT wait** for one agent to complete before starting another independent task. Parallel execution dramatically reduces total completion time and optimizes context usage.
+
+### ✅ When to Use Parallel Agents
+
+Invoke multiple agents simultaneously when tasks are:
+- **Independent research/analysis** (security review + code review)
+- **Multi-domain work** (platform setup + CI/CD configuration + documentation)
+- **Parallel investigations** (architecture analysis + performance review + security audit)
+- **Unrelated file modifications** (backend code + frontend design + database schema)
+- **Preparation tasks** (gather requirements + analyze existing code + review dependencies)
+- **Cross-functional reviews** (UX design + technical feasibility + security assessment)
+
+**Pattern**: If Task B does NOT need output from Task A to begin → Run them in parallel.
+
+### ❌ When NOT to Use Parallel Agents
+
+Do NOT run agents in parallel when:
+- **Sequential dependencies** (Task B requires Task A's output)
+- **Order matters** (must setup infrastructure before deploying code)
+- **Same file modifications** (two agents editing the same file creates conflicts)
+- **Coordinated decisions** (agents need to align on shared architecture before proceeding)
+- **Staged workflows** (design must be approved before implementation begins)
+
+**Pattern**: If Task B must wait for Task A to complete → Run them sequentially.
+
+### How to Invoke Parallel Agents
+
+**Single Message, Multiple Task Invocations**:
+```
+[Main agent sends ONE message with multiple Task tool calls]
+
+Task 1: Invoke tactical-cybersecurity for security review
+Task 2: Invoke tactical-software-engineer for code refactoring
+Task 3: Invoke tactical-product-manager for documentation update
+
+[All agents run concurrently, main agent collects results when complete]
+```
+
+**Integration After Completion**:
+- Wait for all parallel agents to finish
+- Collect and validate all deliverables
+- Integrate results into cohesive response
+- Present unified summary to user
+
+### Example Scenarios
+
+**Scenario 1: Feature Development**
+```
+User: "Add authentication feature - review security, implement backend, design UI"
+
+Main agent invokes in PARALLEL:
+- tactical-cybersecurity: Security requirements analysis
+- tactical-software-engineer: Backend authentication logic
+- tactical-ux-ui-designer: Login UI/UX design
+
+All three run simultaneously → 3x faster completion
+```
+
+**Scenario 2: System Analysis**
+```
+User: "Analyze our application for improvements"
+
+Main agent invokes in PARALLEL:
+- tactical-platform-engineer: Infrastructure review
+- tactical-software-engineer: Code quality analysis
+- tactical-cybersecurity: Security vulnerability scan
+- data-scientist: Performance metrics analysis
+
+All four run simultaneously → 4x faster completion
+```
+
+### Benefits of Parallel Execution
+
+1. **⏱️ Faster Completion**: Multiple agents working simultaneously vs. sequential bottlenecks
+2. **🎯 Context Efficiency**: Parallel work uses context more efficiently than sequential delegation
+3. **📊 Better Resource Utilization**: Leverages multiple specialized agents concurrently
+4. **🔄 Improved Workflow**: Reduces total session time and accelerates delivery
+5. **✨ Enhanced Productivity**: User gets comprehensive results faster
+
+### Execution Checklist
+
+Before invoking agents, ask:
+- [ ] Are these tasks independent? (Yes → Parallel | No → Sequential)
+- [ ] Do any tasks depend on others' outputs? (Yes → Sequential | No → Parallel)
+- [ ] Will agents modify the same files? (Yes → Sequential | No → Parallel)
+- [ ] Can all tasks start with current information? (Yes → Parallel | No → Sequential)
+
+**Default bias: PARALLEL unless dependencies require sequential execution**
+
+### User Communication Protocols
+
+#### Sequential Question Pattern
+
+**MANDATORY**: When gathering information from the user, ask questions ONE AT A TIME.
+
+**Rationale**: User answers to early questions often affect the relevance and framing of later questions. Sequential questioning enables adaptive conversation flow.
+
+**Protocol**:
+1. Ask a single, focused question
+2. Wait for user response
+3. Process the answer and determine next question based on response
+4. Repeat until sufficient information is gathered
+
+**Examples**:
+
+❌ **WRONG - Batched Questions**:
+```
+What should the agent do?
+What tools are you using?
+What deliverables do you need?
+What are the scope boundaries?
+```
+
+✅ **CORRECT - Sequential Questions**:
+```
+First interaction: "What is the primary responsibility of this agent?"
+[Wait for response]
+
+Second interaction: "Based on [user's answer], what tools or systems will it interact with?"
+[Wait for response]
+
+Third interaction: "Given that it handles [previous context], what deliverables should it produce?"
+```
+
+**Exceptions**:
+- User explicitly requests: "Ask me all your questions at once"
+- Simple binary clarifications during task execution
+- Confirming understanding of previously stated information
+
 ## 📁 System Structure
 
 **Expected Folder Layout:**
@@ -124,17 +259,74 @@ The main Claude agent's role is to:
 
 **Display Format**:
 ```
-Context: 🟩🟩🟩🟩🟩🟩🟩🟩⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ 40%
+Context: 🟩🟩🟩🟩🟩🟩🟩🟩⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ 40% (80k/200k)
 ```
 
+**CRITICAL**: System warnings show MESSAGE tokens only, not total context usage.
+
+**Understanding Context Usage**:
+
+The total context "used" includes three components:
+1. **Message tokens**: Your conversation history (shown in system warnings)
+2. **System overhead**: ~30k tokens (system prompt ~3k + tools ~17k + agents ~2k + memory ~8k)
+3. **Autocompact buffer**: 45k tokens (22.5% reserved for automatic compaction)
+
+**Total used = messages + overhead + buffer = messages + 75k**
+
+**Note**: Overhead varies slightly (29-31k) based on active agents and memory files loaded.
+
+**Calculation Method**:
+
+**Step 1: Get message token count from system warning**
+- Parse `<system_warning>Token usage: X/200000` from the current response
+- X represents MESSAGE tokens only (not total context usage)
+- Example: If warning shows "Token usage: 37900/200000", X = 37900 (messages only)
+
+**Step 2: Calculate total context usage**
+- Add overhead and buffer to message tokens
+- `total_used = message_tokens + 75000`
+- Example: 37000 + 75000 = 112000 tokens (~112k)
+
+**Step 3: Calculate percentage and blocks**
+- `percentage = (total_used / 200000) * 100`
+- `total_blocks = round((percentage / 100) * 20)`
+- Example: (112000 / 200000) * 100 = 56%, blocks = 11
+
+**Step 4: Fill blocks with correct colors**
+```
+For each block number from 1 to 20:
+  block_percentage = (block_number / 20) * 100
+
+  if block_number > total_blocks:
+    use ⬛ (unused)
+  else if block_percentage <= 50:
+    use 🟩 (green - blocks 1-10)
+  else if block_percentage <= 65:
+    use 🟨 (yellow - blocks 11-13)
+  else if block_percentage <= 75:
+    use 🟧 (orange - blocks 14-15)
+  else:
+    use 🟥 (red - blocks 16-20)
+```
+
+**Step 5: Add status message**
+- If percentage >= 80: Add "🚨 New session recommended"
+- Else if percentage >= 75: Add "🔄 Session handoff created"
+- Else if percentage >= 65: Add "⚠️ Approaching handoff"
+
+**Examples (using system warning + formula)**:
+- System warning: 25k messages → 25k + 75k = 100k total → 50% 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ 50% (100k/200k)
+- System warning: 55k messages → 55k + 75k = 130k total → 65% 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟨🟨🟨⬛⬛⬛⬛⬛⬛⬛ 65% (130k/200k) ⚠️ Approaching handoff
+- System warning: 75k messages → 75k + 75k = 150k total → 75% 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟨🟨🟨🟧🟧⬛⬛⬛⬛⬛ 75% (150k/200k) 🔄 Session handoff created
+
+**Validation**: Users can run `/context` command to verify accuracy. The calculated total should match the "Total" shown in `/context` output within ±5k tokens (overhead varies slightly based on active agents and memory files).
+
 **Context Thresholds**:
-- **50% (100k tokens)**: Warning - approaching handoff threshold
-- **65% (130k tokens)**: Automatically create session handoff files
+- **65% (130k tokens)**: Warning - approaching handoff threshold
+- **75% (150k tokens)**: Automatically create session handoff files
 - **80% (160k tokens)**: Strongly recommend new session
 
-**Color Coding**: 🟩 Green (0-50%) | 🟨 Yellow (50-65%) | 🟧 Orange (65-80%) | 🟥 Red (80-100%)
-
-**Reference**: See `.claude/docs/context-display-guide.md` for detailed calculation algorithm and examples.
+**Color Coding**: 🟩 Green (0-50%) | 🟨 Yellow (50-65%) | 🟧 Orange (65-75%) | 🟥 Red (75-100%)
 
 **NO EXCEPTIONS**: This display is REQUIRED at the end of every response, even short ones.
 
@@ -143,13 +335,13 @@ Context: 🟩🟩🟩🟩🟩🟩🟩🟩⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ 40
 **PURPOSE**: Maintain seamless workflow continuity across context window boundaries by automatically creating session handoff documentation.
 
 **Automatic Handoff Triggers**:
-1. **50% Context Usage (100k tokens)**: Display warning that handoff will be created at 65%
-2. **65% Context Usage (130k tokens)**: MANDATORY - Create session handoff files
+1. **65% Context Usage (130k tokens)**: Display warning that handoff will be created at 75%
+2. **75% Context Usage (150k tokens)**: MANDATORY - Create session handoff files
 3. **80% Context Usage (160k tokens)**: Strongly recommend new session
 
 **Session File Requirements**:
 
-At 65% threshold, create TWO files:
+At 75% threshold, create TWO files:
 - `[NUMBER]-SESSION.md` - Complete session summary using `session-summary-template.md`
 - `HANDOFF-SESSION.md` - Forward-looking handoff using `handoff-session-template.md` (OVERWRITES previous)
 
@@ -165,7 +357,7 @@ Session files must reference:
 
 **Handoff file enables session restart**: Users provide HANDOFF-SESSION.md to new session for immediate context restoration.
 
-**NO EXCEPTIONS**: Session handoff is mandatory at 65% context usage (130k tokens).
+**NO EXCEPTIONS**: Session handoff is mandatory at 75% context usage (150k tokens).
 
 #### Agent Session History Protocol
 
@@ -174,8 +366,24 @@ Session files must reference:
 **MANDATORY**: Every specialized agent invocation MUST create a session history file before returning control to the main agent.
 
 **File Naming Convention**:
-- **Pattern**: `[YYYYMMDD-HHMMSS]-[AGENT_TYPE]-[SEQUENCE].md`
-- **Example**: `20251010-143022-tactical-software-engineer-001.md`
+- **Pattern**: `[YYYYMMDD-HHMMSS]-[AGENT_TYPE]-[DESCRIPTION]-[SEQUENCE].md`
+- **Description field**: 1-4 word summary in kebab-case (max 25 characters)
+- **Example**: `20251010-143022-tactical-software-engineer-add-auth-flow-001.md`
+
+**Description Guidelines**:
+- Use 1-4 words, hyphenated (kebab-case)
+- Maximum ~25 characters
+- Use action-focused format: verb-noun (e.g., `add-tdd-support`, `fix-auth-bug`)
+- Or feature-focused format: noun-noun (e.g., `context-display-guide`, `api-security`)
+
+**Good Examples**:
+| Task Type | Description Example |
+|-----------|---------------------|
+| Feature creation | `add-dark-mode` |
+| Documentation | `context-docs-guide` |
+| Bug fix | `fix-auth-timeout` |
+| Refactor | `refactor-api-client` |
+| Configuration | `setup-cicd-pipeline` |
 
 **Required Documentation**:
 
@@ -432,9 +640,15 @@ When receiving a task, use this decision framework:
 
 ## Standardized Agent Invocation Patterns
 
-Use structured briefings with: Task, Context, Constraints, Expected Deliverables, and Success Criteria.
+Use structured briefings with: Task, Context, Constraints, **TDD Requirements** (for code tasks), Expected Deliverables, and Success Criteria.
 
-**Reference**: See `.claude/docs/agent-invocation-examples.md` for detailed templates and examples.
+### TDD Requirements Template
+
+**MANDATORY for ALL code implementation tasks.**
+
+When invoking agents for code implementation, testing, or bug fixes, include TDD requirements in the briefing.
+
+**Reference**: See `.claude/docs/tdd-workflow.md` for the complete TDD template and workflow requirements.
 
 ## Error Handling and Escalation
 
@@ -619,162 +833,30 @@ Before creating or assigning tasks:
 
 ## Development Best Practices
 
-### GitLab CI/CD Specific Constraints
+### GitLab CI/CD Constraints
 
-**CRITICAL**: When writing `.gitlab-ci.yml` files or any GitLab CI/CD configurations:
+**CRITICAL**: When writing `.gitlab-ci.yml` files, follow specific formatting rules to avoid YAML parsing errors.
 
-1. **Echo Statement Formatting**
-   - ❌ **NEVER** use colons (`:`) to separate labels from variables in echo statements
-   - ✅ **ALWAYS** use double dashes (`--`) instead
+Key rules:
+- Use `--` instead of `:` in echo statements
+- Use YAML literal block scalar (`|`) for multi-line scripts
+- Reference arrays directly for YAML anchors
 
-   **Examples**:
-   ```yaml
-   # ❌ WRONG - GitLab parses colons as YAML syntax
-   - echo "Job: ${CI_JOB_NAME}"
-   - echo "Branch: ${CI_COMMIT_REF_NAME}"
+**Reference**: See `.claude/docs/gitlab-cicd-guide.md` for complete examples and explanations.
 
-   # ✅ CORRECT - Use double dashes instead
-   - echo "Job--${CI_JOB_NAME}"
-   - echo "Branch--${CI_COMMIT_REF_NAME}"
-   ```
+### Test-Driven Development (TDD) Protocol
 
-2. **Multi-line Shell Scripts**
-   - Use YAML literal block scalar (`|`) for multi-line if/else statements
-   - Never use inline YAML syntax for shell conditionals
+**MANDATORY for ALL code implementation tasks - NO EXCEPTIONS**
 
-   **Example**:
-   ```yaml
-   script:
-     - some_command || EXIT_CODE=$?
-     - |
-       if [ -n "${EXIT_CODE}" ]; then
-         echo "Error occurred"
-         exit ${EXIT_CODE}
-       fi
-   ```
+All specialized agents performing code implementation MUST follow the TDD workflow:
+1. Write Failing Test First
+2. Implement Minimal Code
+3. Verify Test Passes
+4. Refactor If Needed
+5. Run Integration/E2E Tests
+6. Commit Only If All Pass
 
-3. **YAML Anchors for before_script**
-   - Anchor must reference array directly, not a hash with `before_script` key
-   - Use `before_script: *anchor_name` not `<<: *anchor_name`
-
-   **Example**:
-   ```yaml
-   # ✅ CORRECT
-   .common_before_script: &common_before_script
-     - echo "Setup step 1"
-     - echo "Setup step 2"
-
-   job:
-     before_script: *common_before_script
-   ```
-
-**Why This Matters**: GitLab's YAML parser interprets colons as key-value separators, causing validation errors. Using `--` prevents parsing issues while maintaining readability.
-
-### Test-Driven Development (TDD) - Optional Best Practice
-
-**When to use TDD**: Projects requiring high code quality, complex business logic, or critical functionality where bugs are costly.
-
-**When to skip TDD**: Simple scripts, prototypes, configuration-only changes, or documentation updates.
-
-#### TDD Workflow (Recommended for Code-Heavy Projects)
-
-For projects adopting TDD, follow this development cycle:
-
-**1. Write Failing Test First**
-- Create test file before implementation code
-- Test must reproduce the requirement or validate expected behavior
-- Run test, verify it fails (confirms test is valid)
-- Command example: `pytest tests/unit/test_feature.py -v`
-
-**2. Implement Minimal Code**
-- Write smallest amount of code to make test pass
-- Focus on requirement, avoid premature optimization
-- Keep it simple - refactor later
-
-**3. Verify Test Passes**
-- Run test suite, confirm all tests pass
-- Fix any failures immediately
-- Verify existing tests still pass (no regressions)
-
-**4. Run Integration/E2E Tests**
-- Verify feature works in actual system
-- Test via API calls, demo scripts, or manual verification
-- Confirm end-user facing behavior is correct
-
-**5. Refactor If Needed**
-- Clean up code while keeping tests green
-- Improve readability, remove duplication
-- Re-run tests after each refactor
-
-**6. Commit Only When All Tests Pass**
-- Unit tests: PASS ✅
-- Integration tests: PASS ✅
-- E2E verification: PASS ✅
-- Include test files in commit
-
-#### Using TDD Templates
-
-The Garden provides an optional TDD task template:
-
-**To use TDD for a task**:
-```bash
-# Create task from TDD template
-cp .claude/templates/tdd-task-template.md .claude/tasks/2_active/[task-name].md
-
-# Fill in task details and follow checklist
-```
-
-**TDD task template includes**:
-- Step-by-step TDD workflow checklist
-- Test evidence documentation
-- Integration verification steps
-- Commit criteria verification
-
-#### Agent Delegation with TDD
-
-When delegating code implementation to specialized agents and TDD is required:
-
-**Include in agent briefing**:
-```
-TDD Requirements (if applicable):
-- Write failing test first before implementation
-- Report test output (failure, then success)
-- Include integration/E2E verification
-- Provide test file paths in deliverables
-
-Expected test evidence:
-- Initial test failure output
-- Test success output after implementation
-- Integration test results
-```
-
-**Agent responsibilities when TDD is specified**:
-- Report each TDD step completion with command output
-- Include test file paths in deliverables
-- Show test pass/fail status before claiming task complete
-- Provide integration test evidence
-
-#### TDD Best Practices
-
-**Test Coverage Recommendations**:
-- Unit tests: Aim for >80% coverage of business logic
-- Integration tests: Cover critical user workflows
-- E2E tests: Validate key features work end-to-end
-
-**When TDD Can Be Skipped**:
-- Documentation-only changes (README, comments, guides)
-- Configuration changes without logic (settings, environment vars)
-- Experimental spikes/prototypes (mark clearly as non-production)
-- Visual/UI adjustments (use manual verification instead)
-
-**TDD Benefits**:
-- Catches bugs before they reach production
-- Provides regression protection
-- Documents expected behavior via tests
-- Enables confident refactoring
-- Reduces debugging time
-
-**TDD Is Optional**: Projects can choose whether to adopt TDD based on requirements, complexity, and risk tolerance. The Garden supports both TDD and non-TDD workflows.
+**Reference**: See `.claude/docs/tdd-workflow.md` for complete workflow details, enforcement rules, exemptions, and quality standards.
 
 ### Task Management Rules
 
@@ -807,8 +889,27 @@ Expected test evidence:
 
 ### Quality Assurance
 
-**Before**: Confirm scope, verify paths/modules, understand existing code, clarify requirements, establish criteria, **determine if TDD is needed**
-**During**: Add subtasks immediately, comment complex logic, update docs, mark completions, **write tests as you code (if using TDD)**
-**After**: Update README, verify comments, confirm subtasks completed, validate integrations, **ensure tests pass (if tests exist)**
+**Before**: Confirm scope, verify paths/modules, understand existing code, clarify requirements, establish criteria, **write failing test**
+**During**: Add subtasks immediately, comment complex logic, update docs, mark completions, **keep tests green**
+**After**: Update README, verify comments, confirm subtasks completed, validate integrations, **all tests pass**
+
+#### Test Requirements (Mandatory Gate)
+
+Every task involving code changes MUST satisfy these test requirements before marking complete:
+
+- [ ] **Unit tests exist** with >80% coverage of modified code
+- [ ] **Unit tests pass** - run `pytest tests/unit/... -v` successfully
+- [ ] **Integration test exists** demonstrating feature works end-to-end
+- [ ] **Integration test passes** - verified via API call, demo script, or CLI
+- [ ] **Test output documented** in agent session history or commit message
+- [ ] **Test files committed** with code changes in same commit
+
+**NO EXCEPTIONS** - Code without passing tests is incomplete and task cannot be marked done.
+
+**Quality Gate Enforcement**:
+- Main agent verifies test files exist before accepting agent deliverables
+- Agents must provide test execution output as proof
+- Tasks remain "in progress" until all test requirements met
+- Commits are rejected if tests not included
 
 This framework ensures consistent, efficient, and high-quality agent orchestration while maintaining clear boundaries, expectations, comprehensive documentation, and full workflow continuity across sessions.
