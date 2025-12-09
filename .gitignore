@@ -36,3 +36,20 @@ __pycache__/
 
 # OS
 Thumbs.db
+
+# Firebase
+.firebase/
+.firebasestorage
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Vercel
+.vercel
+
+# Node.js (for application/ directory)
+application/node_modules/
+application/build/
+application/dist/
+application/.env.local
+application/.env.production.local
