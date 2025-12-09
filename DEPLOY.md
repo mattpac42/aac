@@ -2,6 +2,25 @@
 
 This guide provides step-by-step instructions for deploying the AAC Communication Board App to GitHub, Firebase Hosting, and Vercel.
 
+## Quick Reference
+
+| Resource | URL |
+|----------|-----|
+| **Vercel (Production)** | https://aac-taupe.vercel.app |
+| **Firebase Hosting** | https://aac-ai-device.web.app |
+| **GitHub Repository** | https://github.com/mattpac42/aac |
+| **GitLab Mirror** | https://gitlab.yuki.lan/health-services/aac |
+| **Firebase Console** | https://console.firebase.google.com/project/aac-ai-device |
+| **Vercel Dashboard** | https://vercel.com/matt-paciones-projects/aac |
+
+### Project IDs & Secrets Reference
+
+| Secret | Value |
+|--------|-------|
+| `FIREBASE_PROJECT_ID` | `aac-ai-device` |
+| `VERCEL_PROJECT_ID` | `prj_a4aMmlOThWynGu7PMmd21pSVVwhx` |
+| `VERCEL_ORG_ID` | `team_mP8CzVxXRFCXwPhkLGcvvZo0` |
+
 ## Table of Contents
 
 1. [Prerequisites](#1-prerequisites)
@@ -141,17 +160,17 @@ git push github main
 
 ### Step 2: Update Firebase Configuration
 
-Edit the `.firebaserc` file in `/Users/mattpacione/git/health_services/AAC/application/.firebaserc`:
+The `.firebaserc` file is already configured:
 
 ```json
 {
   "projects": {
-    "default": "your-firebase-project-id"
+    "default": "aac-ai-device"
   }
 }
 ```
 
-Replace `your-firebase-project-id` with your actual Firebase project ID from the console.
+**Firebase Project ID**: `aac-ai-device`
 
 ### Step 3: Authenticate Firebase CLI
 
@@ -420,6 +439,27 @@ Both workflows support preview deployments for pull requests:
 ## 6. Troubleshooting
 
 ### Common Issues and Solutions
+
+#### Vercel Build Fails - "Could not resolve entry module index.html"
+
+**Error**: `Could not resolve entry module "index.html"`
+
+**Cause**: The `index.html` file is not tracked in git (likely ignored by `.gitignore`).
+
+**Solution**:
+```bash
+# Check if index.html is being ignored
+git check-ignore application/index.html
+
+# If ignored, update .gitignore to allow it
+# Add this line to .gitignore:
+!application/index.html
+
+# Then add and commit
+git add -f application/index.html
+git commit -m "fix: add index.html for Vite build"
+git push
+```
 
 #### Build Fails - Node Version Mismatch
 
