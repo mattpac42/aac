@@ -6,6 +6,7 @@ This guide provides step-by-step instructions for deploying the AAC Communicatio
 
 | Resource | URL |
 |----------|-----|
+| **Custom Domain** | https://aac.pacione.org |
 | **Vercel (Production)** | https://aac-taupe.vercel.app |
 | **Firebase Hosting** | https://aac-ai-device.web.app |
 | **GitHub Repository** | https://github.com/mattpac42/aac |
@@ -305,14 +306,43 @@ Production: https://your-project-name.vercel.app
 
 Visit these URLs to verify deployment.
 
-### Optional: Custom Domain Setup
+### Custom Domain Setup
 
-1. Go to your project in Vercel Dashboard
+**Important**: Vercel must be configured to accept traffic for your custom domain. Without this step, your DNS configuration alone won't work.
+
+#### Step 1: Add Domain to Vercel Project
+
+1. Go to [Vercel Dashboard](https://vercel.com/matt-paciones-projects/aac/settings/domains)
 2. Navigate to **Settings** > **Domains**
 3. Click **Add Domain**
-4. Enter your domain name
-5. Follow DNS configuration instructions
-6. Wait for verification and SSL provisioning
+4. Enter your domain name (e.g., `aac.pacione.org`)
+5. Vercel will then accept traffic for that hostname
+
+#### Step 2: Configure DNS
+
+After adding the domain in Vercel, configure your DNS:
+
+**For subdomain (e.g., aac.pacione.org)**:
+```
+Type: CNAME
+Name: aac
+Value: cname.vercel-dns.com
+```
+
+**For root domain (e.g., pacione.org)**:
+```
+Type: A
+Name: @
+Value: 76.76.21.21
+```
+
+#### Step 3: Verify and Wait for SSL
+
+1. Vercel will automatically provision an SSL certificate
+2. This can take a few minutes to 24 hours
+3. Check status in Vercel Dashboard > Domains
+
+**Current Custom Domain**: `aac.pacione.org`
 
 ---
 
