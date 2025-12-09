@@ -73,8 +73,8 @@ vercel --version
 From your project root directory (`/Users/mattpacione/git/health_services/AAC/`):
 
 ```bash
-# Add the remote repository (replace USERNAME with your GitHub username)
-git remote add origin https://github.com/USERNAME/AAC.git
+# Add the remote repository
+git remote add origin https://github.com/mattpac42/aac.git
 
 # Verify remote was added
 git remote -v
@@ -87,9 +87,42 @@ git checkout main
 git push -u origin main
 ```
 
+### Step 2b: Dual Remote Setup (GitHub + GitLab)
+
+This project uses both GitLab (primary origin) and GitHub (for CI/CD):
+
+- **GitLab**: https://gitlab.yuki.lan/health-services/aac
+- **GitHub**: https://github.com/mattpac42/aac
+
+**Current Configuration** (already set up):
+
+```bash
+# Remotes are configured as:
+# origin    https://gitlab.yuki.lan/health-services/aac.git (fetch)
+# origin    https://gitlab.yuki.lan/health-services/aac.git (push)
+# origin    https://github.com/mattpac42/aac.git (push)  <- dual push
+# github    https://github.com/mattpac42/aac.git (fetch)
+# github    https://github.com/mattpac42/aac.git (push)
+
+# Verify configuration
+git remote -v
+```
+
+**How It Works**:
+
+```bash
+# Push to BOTH GitLab and GitHub with a single command
+git push origin main
+
+# Push to GitHub only (if needed)
+git push github main
+```
+
+> **Note**: CI/CD automation runs on GitHub Actions only. GitLab serves as your internal mirror.
+
 ### Step 3: Verify Repository
 
-1. Visit your repository at `https://github.com/USERNAME/AAC`
+1. Visit your repository at https://github.com/mattpac42/aac
 2. Verify all files are present
 3. Ensure the `application/` directory contains your React app
 
