@@ -86,16 +86,11 @@ build:
 # ============================================
 trivy:scan:
   stage: scan
-  image: aquasec/trivy:latest
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
   script:
-    - echo "Running Trivy security scan on filesystem"
-    - |
-      trivy filesystem --severity HIGH,CRITICAL \
-        --exit-code 0 \
-        --format table \
-        --no-progress \
-        .
-    - echo "Security scan completed"
+    - trivy filesystem --severity HIGH,CRITICAL --exit-code 0 --format table --no-progress .
   # Allow failure for now to not block deployments
   # Change to false once vulnerabilities are addressed
   allow_failure: true
