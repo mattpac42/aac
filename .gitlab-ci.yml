@@ -1,0 +1,130 @@
+# GitLab CI/CD Pipeline for AAC Communication Board App
+# Pipeline Flow: GitLab → GitHub → Vercel
+#
+# Stages:
+# 1. lint     - Code quality checks (optional, no lint script currently)
+# 2. build    - Verify application builds successfully
+# 3. scan     - Security vulnerability scanning with Trivy
+# 4. mirror   - Mirror repository to GitHub (triggers Vercel deployment)
+
+stages:
+  - lint
+  - build
+  - scan
+  - mirror
+
+# Default configuration for all jobs
+default:
+  tags:
+    - nodejs  # Use self-hosted GitLab runner with Node.js
+
+# Variables
+variables:
+  # Application directory
+  APP_DIR: "application"
+  # GitHub mirror repository
+  GITHUB_REPO: "git@github.com:mattpac42/aac.git"
+  # Git configuration
+  GIT_EMAIL: "gitlab-ci@aac.pacione.org"
+  GIT_NAME: "GitLab CI"
+
+# Cache npm packages to speed up builds
+.npm_cache: &npm_cache
+  cache:
+    key:
+      files:
+        - ${APP_DIR}/package-lock.json
+    paths:
+      - ${APP_DIR}/node_modules/
+
+# ============================================
+# LINT STAGE
+# ============================================
+lint:
+  stage: lint
+  <<: *npm_cache
+  script:
+    - echo "Checking for lint script in package.json"
+    - cd ${APP_DIR}
+    - |
+      if npm run | grep -q "lint"; then
+        echo "Running lint script"
+        npm run lint
+      else
+        echo "No lint script found in package.json -- skipping"
+        echo "To enable linting, add a lint script to package.json"
+      fi
+  # Allow failure since no lint script exists yet
+  allow_failure: true
+  only:
+    - main
+    - merge_requests
+
+# ============================================
+# BUILD STAGE
+# ============================================
+build:
+  stage: build
+  <<: *npm_cache
+  script:
+    - echo "Installing dependencies"
+    - cd ${APP_DIR}
+    - npm ci
+    - echo "Building application with Vite"
+    - npm run build
+    - echo "Build completed successfully"
+  artifacts:
+    paths:
+      - ${APP_DIR}/dist/
+    expire_in: 1 hour
+  only:
+    - main
+    - merge_requests
+
+# ============================================
+# SCAN STAGE - Security Vulnerability Scanning
+# ============================================
+trivy:scan:
+  stage: scan
+  image: aquasec/trivy:latest
+  script:
+    - echo "Running Trivy security scan on filesystem"
+    - |
+      trivy filesystem --severity HIGH,CRITICAL \
+        --exit-code 0 \
+        --format table \
+        --no-progress \
+        .
+    - echo "Security scan completed"
+  # Allow failure for now to not block deployments
+  # Change to false once vulnerabilities are addressed
+  allow_failure: true
+  only:
+    - main
+    - merge_requests
+
+# ============================================
+# MIRROR STAGE - Push to GitHub (triggers Vercel)
+# ============================================
+mirror:github:
+  stage: mirror
+  before_script:
+    - echo "Configuring Git for GitHub mirror"
+    - git config --global user.email "${GIT_EMAIL}"
+    - git config --global user.name "${GIT_NAME}"
+    - echo "Setting up SSH for GitHub access"
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - cp "${GITHUB_SSH_KEY}" ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+  script:
+    - echo "Mirroring repository to GitHub"
+    - git remote add github ${GITHUB_REPO} || git remote set-url github ${GITHUB_REPO}
+    - echo "Pushing to GitHub main branch"
+    - git push github HEAD:main --force
+    - echo "Mirror completed -- Vercel deployment will trigger automatically"
+  only:
+    - main
+  # Only run if all previous stages succeed
+  when: on_success
