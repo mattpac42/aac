@@ -142,6 +142,11 @@ export function SettingsScreen({ coreWords, categoryWords, wordTypeColors, onUpd
           </div>
         </Card>
       </div>
+
+      {/* Version Display */}
+      <div className="text-center text-xs text-gray-400 mt-auto pb-4">
+        {__APP_VERSION__} ({__GIT_COMMIT__})
+      </div>
     </div>
   );
 }
