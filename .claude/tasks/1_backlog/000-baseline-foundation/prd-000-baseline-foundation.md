@@ -14,11 +14,15 @@ The AAC Communication Board App is a fully functional MVP with:
 - **Frontend**: React 18.3.1 with TypeScript, Vite 6.3.5 build system
 - **UI Framework**: Tailwind CSS with comprehensive Radix UI component library
 - **Deployment**: Configured for both Vercel (production) and Firebase Hosting
+- **CI/CD Pipeline**: GitLab CI/CD with 4-stage pipeline (lint, build, scan, mirror) deployed and active
+- **Version**: 1.0.0 (tagged release with version display in Settings screen)
 - **Core Features**: Communication board with 30 core words, 7 category-specific word sets, message composition, text-to-speech, settings customization, and educational resources for communication partners
 
 The app is production-ready and currently deployed at:
 - **Vercel (Production)**: https://aac-taupe.vercel.app
 - **Firebase Hosting**: https://aac-ai-device.web.app
+
+**Pipeline Flow**: GitLab → GitHub (mirror) → Vercel (auto-deploy)
 
 ## Goals
 
@@ -76,44 +80,60 @@ The app is production-ready and currently deployed at:
 16. **The Voice Settings screen must exist as a placeholder** for future voice selection functionality
 17. **The Volume Settings screen must exist as a placeholder** for future volume/rate/pitch controls
 18. **The Grid Layout screen must exist as a placeholder** for future grid size customization
+19. **The Settings screen must display application version and git commit hash** at the bottom of the screen (e.g., "1.0.0 (d823b9f)")
 
 ### Educational Resources
 
-19. **The system must provide a Resources screen categorized into 4 tabs**: Getting Started, Tips for Partners, Modeling & Teaching, Research & Evidence
-20. **The Resources screen must display 6 default educational resources** including articles on partner modeling, core vocabulary, and AAC best practices
-21. **Users must be able to add custom resources** with title, description, URL, type (article/video/document/tip), and category assignment
-22. **Users must be able to delete custom or default resources** with confirmation prompt
-23. **Resources must support 4 content types with distinct visual styling**: article (green), video (red), document (blue), tip (yellow)
-24. **The system must display an informational banner explaining the importance of communication partner modeling**
-25. **External resource links must open in new browser tabs**
+20. **The system must provide a Resources screen categorized into 4 tabs**: Getting Started, Tips for Partners, Modeling & Teaching, Research & Evidence
+21. **The Resources screen must display 6 default educational resources** including articles on partner modeling, core vocabulary, and AAC best practices
+22. **Users must be able to add custom resources** with title, description, URL, type (article/video/document/tip), and category assignment
+23. **Users must be able to delete custom or default resources** with confirmation prompt
+24. **Resources must support 4 content types with distinct visual styling**: article (green), video (red), document (blue), tip (yellow)
+25. **The system must display an informational banner explaining the importance of communication partner modeling**
+26. **External resource links must open in new browser tabs**
 
 ### User Interface & Navigation
 
-26. **The application must use a responsive layout with max-width constraint (7xl/80rem)** for optimal tablet/desktop viewing
-27. **All word buttons must display Lucide React icons with text labels**
-28. **Navigation must support 9 category buttons** (7 content categories + Resources + Settings) displayed in a single row beneath the core board
-29. **Category and Settings buttons must use consistent accent styling** to distinguish from word buttons
-30. **Back navigation must be available from all category and settings screens** returning to the core board
-31. **The UI must use Tailwind CSS with slate color palette** as the primary design system
-32. **All interactive elements must use Radix UI components** (Button, Card, Dialog, Input, Select, etc.) for accessibility
+27. **The application must use a responsive layout with max-width constraint (7xl/80rem)** for optimal tablet/desktop viewing
+28. **All word buttons must display Lucide React icons with text labels**
+29. **Navigation must support 9 category buttons** (7 content categories + Resources + Settings) displayed in a single row beneath the core board
+30. **Category and Settings buttons must use consistent accent styling** to distinguish from word buttons
+31. **Back navigation must be available from all category and settings screens** returning to the core board
+32. **The UI must use Tailwind CSS with slate color palette** as the primary design system
+33. **All interactive elements must use Radix UI components** (Button, Card, Dialog, Input, Select, etc.) for accessibility
 
 ### Data Management (Current State)
 
-33. **Core words vocabulary must be stored in component state** initialized from hardcoded defaults (30 words)
-34. **Category words must be stored in component state** initialized from hardcoded defaults (109 total words across 7 categories)
-35. **Word type color mappings must be stored in component state** initialized from hardcoded defaults
-36. **Resources must be stored in component state** initialized from hardcoded defaults (6 resources)
-37. **All data must reset to defaults on page reload** (no persistence layer implemented yet)
+34. **Core words vocabulary must be stored in component state** initialized from hardcoded defaults (30 words)
+35. **Category words must be stored in component state** initialized from hardcoded defaults (109 total words across 7 categories)
+36. **Word type color mappings must be stored in component state** initialized from hardcoded defaults
+37. **Resources must be stored in component state** initialized from hardcoded defaults (6 resources)
+38. **All data must reset to defaults on page reload** (no persistence layer implemented yet)
 
 ### Technical Infrastructure
 
-38. **The application must build successfully using Vite 6.3.5** with React SWC plugin for fast refresh
-39. **The application must be deployable to Vercel** via `vercel --prod` command with automatic GitHub Actions CI/CD
-40. **The application must be deployable to Firebase Hosting** via `firebase deploy --only hosting` command
-41. **The build output must be generated in `application/build/` directory**
-42. **The application must serve from Firebase project ID `aac-ai-device`**
-43. **The application must run locally via `npm run dev`** on Vite development server
-44. **The application must support both GitLab (internal mirror) and GitHub (CI/CD) remotes**
+39. **The application must build successfully using Vite 6.3.5** with React SWC plugin for fast refresh
+40. **The application must be deployable to Vercel** via `vercel --prod` command with automatic GitHub Actions CI/CD
+41. **The application must be deployable to Firebase Hosting** via `firebase deploy --only hosting` command
+42. **The build output must be generated in `application/build/` directory**
+43. **The application must serve from Firebase project ID `aac-ai-device`**
+44. **The application must run locally via `npm run dev`** on Vite development server
+45. **The application must support both GitLab (internal mirror) and GitHub (CI/CD) remotes**
+46. **The application must inject version and git commit hash at build time** using Vite define configuration
+47. **The application must include package-lock.json** for deterministic CI builds
+
+### CI/CD Automation
+
+48. **GitLab CI/CD pipeline must execute on main branch and merge requests** with 4 stages: lint, build, scan, mirror
+49. **The lint stage must check for lint script** and skip gracefully if not present (allow_failure: true)
+50. **The build stage must install dependencies via npm ci** and build application using npm run build
+51. **The build stage must cache node_modules** keyed by package-lock.json for faster builds
+52. **The build stage must produce build artifacts** in application/dist/ directory with 1-hour expiration
+53. **The scan stage must run Trivy security scanner** checking for HIGH and CRITICAL vulnerabilities (allow_failure: true)
+54. **The mirror stage must push to GitHub repository** using SSH key authentication (only on main branch, when all stages succeed)
+55. **The mirror stage must trigger Vercel deployment** automatically via GitHub integration
+56. **GitLab CI variables must include GITHUB_SSH_KEY** for secure authentication
+57. **The pipeline must use self-hosted GitLab runner** with nodejs tag
 
 ## Non-Goals (Out of Scope for Baseline)
 
@@ -329,7 +349,7 @@ src/
 - Root directory: `application/`
 - Build command: `npm run build`
 - Output directory: `build/`
-- Automatic deployments on push to main branch via GitHub Actions
+- Automatic deployments on push to main branch via GitHub integration
 - Preview deployments for pull requests
 
 **Firebase Hosting Deployment**:
@@ -338,11 +358,23 @@ src/
 - Automatic deployments on push to main branch via GitHub Actions
 - Service account authentication for CI/CD
 
-**CI/CD Automation**:
-- GitHub Actions workflows for both platforms
-- Dual-remote git configuration (GitLab + GitHub)
-- Automated preview deployments for pull requests
-- Production deployments on main branch merges
+**GitLab CI/CD Pipeline** (.gitlab-ci.yml):
+- **Stages**: lint → build → scan → mirror
+- **Lint Stage**: Checks for lint script (allow_failure: true if not found)
+- **Build Stage**: npm ci install, Vite build, artifact caching with node_modules
+- **Scan Stage**: Trivy security scanner for HIGH/CRITICAL vulnerabilities (allow_failure: true)
+- **Mirror Stage**: SSH-based push to GitHub main branch (triggers Vercel deployment)
+- **Runner**: Self-hosted GitLab runner with nodejs tag
+- **Caching**: node_modules cached by package-lock.json hash
+- **Artifacts**: dist/ directory with 1-hour expiration
+- **Secrets**: GITHUB_SSH_KEY for authentication
+
+**Pipeline Flow**:
+1. Code pushed to GitLab (main branch or merge request)
+2. GitLab CI runs lint → build → scan stages
+3. On main branch success, mirror stage pushes to GitHub
+4. GitHub webhook triggers Vercel auto-deployment
+5. Vercel builds and deploys to production
 
 ### Constraints & Limitations
 
@@ -382,12 +414,15 @@ src/
 The baseline implementation is considered successful if:
 
 1. **Build & Deployment**: Application builds without errors and deploys successfully to both Vercel and Firebase Hosting
-2. **Core Functionality**: Users can compose messages using core and category vocabulary and hear them spoken via text-to-speech
-3. **Navigation**: Users can navigate between Core Board, 7 category screens, Settings screens, and Resources screen without errors
-4. **Customization**: Users can edit core words, category words, and color themes (changes persist during session only)
-5. **Resources**: Users can view, add, and delete educational resources organized by category
-6. **UI/UX Quality**: Interface is visually clean, touch-friendly, and follows consistent design patterns
-7. **Code Quality**: TypeScript types are properly defined, components are modular and reusable, no console errors in production
+2. **CI/CD Pipeline**: GitLab CI/CD pipeline executes all stages successfully and mirrors to GitHub automatically
+3. **Version Tracking**: Application version and git commit hash are visible in Settings screen
+4. **Core Functionality**: Users can compose messages using core and category vocabulary and hear them spoken via text-to-speech
+5. **Navigation**: Users can navigate between Core Board, 7 category screens, Settings screens, and Resources screen without errors
+6. **Customization**: Users can edit core words, category words, and color themes (changes persist during session only)
+7. **Resources**: Users can view, add, and delete educational resources organized by category
+8. **UI/UX Quality**: Interface is visually clean, touch-friendly, and follows consistent design patterns
+9. **Code Quality**: TypeScript types are properly defined, components are modular and reusable, no console errors in production
+10. **Security Scanning**: Trivy scans execute successfully in CI pipeline (vulnerabilities documented but non-blocking)
 
 ### Future Success Metrics (Not Measured in Baseline)
 
@@ -557,6 +592,7 @@ Based on PRODUCT_VISION.md strategic themes, the recommended PRD development seq
 3. **Link PRDs to Vision Themes**: Each future PRD should explicitly reference which strategic themes from PRODUCT_VISION.md it addresses
 4. **Track Technical Debt**: Document technical debt items discovered during baseline review for future refactoring PRDs
 5. **Update Project Status**: Regularly update `/.claude/tasks/project-status.md` to reflect PRD creation and feature implementation progress
+6. **Reuse Deployment Templates**: Use `.claude/templates/deployment-template/` for new deployment configurations and `.claude/templates/gitlab-github-vercel-setup.md` for pipeline setup guidance
 
 ### Technical Debt Items
 
@@ -574,10 +610,15 @@ While not blocking current functionality, the following technical improvements s
 ---
 
 **Created**: 2025-12-08
+**Last Updated**: 2025-12-12 (Session 002 - Added CI/CD pipeline, version display, deployment templates)
 **Author**: Tactical Product Manager Agent
 **Status**: Approved Baseline
 **PRD Number**: 000 (Baseline Foundation)
+**Version**: 1.0.0
 **Related Documents**:
 - `/Users/mattpacione/git/health_services/AAC/PRODUCT_VISION.md` (Product Vision)
 - `/Users/mattpacione/git/health_services/AAC/DEPLOY.md` (Deployment Guide)
 - `/Users/mattpacione/git/health_services/AAC/.claude/tasks/project-status.md` (Project Status Tracking)
+- `/Users/mattpacione/git/health_services/AAC/.gitlab-ci.yml` (CI/CD Pipeline Configuration)
+- `/Users/mattpacione/git/health_services/AAC/.claude/templates/deployment-template/` (Deployment Templates)
+- `/Users/mattpacione/git/health_services/AAC/.claude/templates/gitlab-github-vercel-setup.md` (Pipeline Setup Guide)
