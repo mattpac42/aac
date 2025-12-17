@@ -8,8 +8,8 @@ This file tracks the status of all features across the project lifecycle.
 
 - **Completed Features**: 1
 - **Active Features**: 1
-- **Backlog Features**: 0
-- **Total Features**: 2
+- **Backlog Features**: 1
+- **Total Features**: 3
 
 ## ✅ Completed Features
 
@@ -38,7 +38,16 @@ This file tracks the status of all features across the project lifecycle.
 
 *Features ready for development, ordered by priority*
 
-*No features currently in backlog*
+### 001-data-persistence
+- **Priority**: HIGH
+- **Status**: Ready for implementation (tasks generated)
+- **Phase**: Phase 1A-1F (6 phases, 13 parent tasks, 76 subtasks)
+- **Estimated Duration**: 4 weeks
+- **Description**: IndexedDB data persistence, unlimited vocabulary expansion, custom image uploads, import/export, offline-first PWA, security review
+- **Location**: `/.claude/tasks/1_backlog/001-data-persistence/`
+- **Files**:
+  - `prd-001-data-persistence.md`
+  - `tasks-prd-001-data-persistence.md` (COMPLETE with detailed subtasks)
 
 ## 📈 Progress Metrics
 
