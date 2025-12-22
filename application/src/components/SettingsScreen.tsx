@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Plus, Volume2, VolumeX, Grid3x3, Palette } from 'lucide-react';
+import { ArrowLeft, Plus, Volume2, VolumeX, Grid3x3, Palette, Download } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { EditWordsScreen } from './settings/EditWordsScreen';
@@ -7,6 +7,7 @@ import { VoiceSettingsScreen } from './settings/VoiceSettingsScreen';
 import { VolumeSettingsScreen } from './settings/VolumeSettingsScreen';
 import { GridLayoutScreen } from './settings/GridLayoutScreen';
 import { ColorThemeScreen } from './settings/ColorThemeScreen';
+import { ImportExportManager } from './ImportExportManager';
 import type { Word, CategoryWord } from '../App';
 import type { WordTypeColors } from './settings/ColorThemeScreen';
 
@@ -128,7 +129,7 @@ export function SettingsScreen({ coreWords, categoryWords, wordTypeColors, onUpd
         </Card>
 
         <Card
-          className="p-8 cursor-pointer hover:border-blue-500 transition-all hover:shadow-lg col-span-2"
+          className="p-8 cursor-pointer hover:border-blue-500 transition-all hover:shadow-lg"
           onClick={() => setCurrentView('color')}
         >
           <div className="flex flex-col items-center gap-4 text-center">
@@ -142,6 +143,12 @@ export function SettingsScreen({ coreWords, categoryWords, wordTypeColors, onUpd
           </div>
         </Card>
       </div>
+
+      {/* Backup & Restore Section */}
+      <section className="mb-8">
+        <h2 className="text-2xl font-bold mb-4 text-slate-800">Backup & Restore</h2>
+        <ImportExportManager />
+      </section>
 
       {/* Version Display */}
       <div className="text-center text-xs text-gray-400 mt-auto pb-4">

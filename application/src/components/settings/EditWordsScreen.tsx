@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card } from '../ui/card';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { ImageUploader } from '../ImageUploader';
 import * as LucideIcons from 'lucide-react';
 import type { Word, CategoryWord } from '../../App';
 import type { WordTypeColors } from './ColorThemeScreen';
@@ -41,10 +42,12 @@ export function EditWordsScreen({ coreWords, categoryWords, wordTypeColors, onUp
   const [wordText, setWordText] = useState('');
   const [wordIcon, setWordIcon] = useState('User');
   const [wordType, setWordType] = useState<'pronoun' | 'verb' | 'descriptive' | 'noun' | 'social'>('noun');
+  const [customImage, setCustomImage] = useState<string | undefined>(undefined);
 
   // Category word dialog state
   const [categoryWordText, setCategoryWordText] = useState('');
   const [categoryWordIcon, setCategoryWordIcon] = useState('User');
+  const [customCategoryImage, setCustomCategoryImage] = useState<string | undefined>(undefined);
 
   const categories = ['People', 'Food', 'Places', 'Feelings', 'Actions', 'School', 'Weather'];
 
@@ -54,6 +57,7 @@ export function EditWordsScreen({ coreWords, categoryWords, wordTypeColors, onUp
     setWordText('');
     setWordIcon('User');
     setWordType('noun');
+    setCustomImage(undefined);
     setIsCoreDialogOpen(true);
   };
 
@@ -62,6 +66,7 @@ export function EditWordsScreen({ coreWords, categoryWords, wordTypeColors, onUp
     setWordText(word.text);
     setWordIcon(word.icon);
     setWordType(word.type);
+    setCustomImage(undefined); // NOTE: Will be populated when Word type includes customImageUrl
     setIsCoreDialogOpen(true);
   };
 
@@ -90,6 +95,7 @@ export function EditWordsScreen({ coreWords, categoryWords, wordTypeColors, onUp
     setSelectedCategory(category);
     setCategoryWordText('');
     setCategoryWordIcon('User');
+    setCustomCategoryImage(undefined);
     setIsCategoryDialogOpen(true);
   };
 
@@ -98,6 +104,7 @@ export function EditWordsScreen({ coreWords, categoryWords, wordTypeColors, onUp
     setSelectedCategory(category);
     setCategoryWordText(word.text);
     setCategoryWordIcon(word.icon);
+    setCustomCategoryImage(undefined); // NOTE: Will be populated when CategoryWord type includes customImageUrl
     setIsCategoryDialogOpen(true);
   };
 
@@ -216,6 +223,17 @@ export function EditWordsScreen({ coreWords, categoryWords, wordTypeColors, onUp
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label>Custom Image (Optional)</Label>
+              <ImageUploader
+                onImageSelect={(base64) => setCustomImage(base64)}
+                currentImage={customImage}
+                maxSizeKB={500}
+                aspectRatio={1}
+              />
+              <p className="text-xs text-slate-500">Upload a custom image for this word button</p>
+            </div>
+
             <div className="flex gap-2 pt-4">
               <Button onClick={() => setIsCoreDialogOpen(false)} variant="outline" className="flex-1">
                 Cancel
@@ -269,6 +287,17 @@ export function EditWordsScreen({ coreWords, categoryWords, wordTypeColors, onUp
                   </ScrollArea>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Custom Image (Optional)</Label>
+              <ImageUploader
+                onImageSelect={(base64) => setCustomCategoryImage(base64)}
+                currentImage={customCategoryImage}
+                maxSizeKB={500}
+                aspectRatio={1}
+              />
+              <p className="text-xs text-slate-500">Upload a custom image for this word button</p>
             </div>
 
             <div className="flex gap-2 pt-4">

@@ -102,22 +102,39 @@ export function useDatabase(): UseDatabaseReturn {
   );
 
   /**
-   * Update word operation
-   * NOTE: Updates local state by refreshing after update
+   * Update word operation with optimistic UI updates
+   * WHY: Provides instant feedback to users while saving in background
+   * REASON: Optimistic updates improve perceived performance by updating UI immediately,
+   * then rolling back on failure instead of waiting for slow IndexedDB operations
    */
   const updateWord = useCallback(async (id: string, changes: Partial<Word>): Promise<void> => {
+    // 1. Capture current state for rollback
+    // NOTE: Store snapshot before optimistic update to enable rollback on failure
+    const previousWords = words;
+
+    // 2. Apply optimistic update to local state IMMEDIATELY
+    // REASON: UI updates instantly, giving user immediate feedback
+    setWords(prev => prev.map(w =>
+      w.id === id ? { ...w, ...changes, modifiedAt: new Date() } : w
+    ));
+
+    setLoading(true);
+    setError(null);
+
     try {
-      setError(null);
+      // 3. Attempt background save to IndexedDB
       await dataService.updateWord(id, changes);
-      // Refresh words to get updated data
-      const updatedWords = await dataService.getAllWords();
-      setWords(updatedWords);
+      // Success - keep optimistic update
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update word';
-      setError(errorMessage);
-      throw err;
+      // 4. ROLLBACK on failure - restore previous state
+      // WHY: User needs to see accurate state when save fails
+      setWords(previousWords);
+      setError('Failed to update word');
+      throw err; // Re-throw for caller handling
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [words]);
 
   /**
    * Delete word operation
@@ -158,24 +175,38 @@ export function useDatabase(): UseDatabaseReturn {
   );
 
   /**
-   * Update category operation
-   * NOTE: Updates local state by refreshing after update
+   * Update category operation with optimistic UI updates
+   * WHY: Provides instant feedback to users while saving in background
+   * REASON: Optimistic updates improve perceived performance by updating UI immediately,
+   * then rolling back on failure instead of waiting for slow IndexedDB operations
    */
   const updateCategory = useCallback(
     async (id: string, changes: Partial<Category>): Promise<void> => {
+      // 1. Capture current state for rollback
+      const previousCategories = categories;
+
+      // 2. Apply optimistic update to local state IMMEDIATELY
+      setCategories(prev => prev.map(c =>
+        c.id === id ? { ...c, ...changes, modifiedAt: new Date() } : c
+      ));
+
+      setLoading(true);
+      setError(null);
+
       try {
-        setError(null);
+        // 3. Attempt background save to IndexedDB
         await dataService.updateCategory(id, changes);
-        // Refresh categories to get updated data
-        const updatedCategories = await dataService.getAllCategories();
-        setCategories(updatedCategories);
+        // Success - keep optimistic update
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to update category';
-        setError(errorMessage);
+        // 4. ROLLBACK on failure - restore previous state
+        setCategories(previousCategories);
+        setError('Failed to update category');
         throw err;
+      } finally {
+        setLoading(false);
       }
     },
-    []
+    [categories]
   );
 
   /**
@@ -195,24 +226,71 @@ export function useDatabase(): UseDatabaseReturn {
   }, []);
 
   /**
-   * Update settings operation
-   * NOTE: Updates local state by refreshing after update
+   * Update settings operation with optimistic UI updates
+   * WHY: Provides instant feedback to users while saving in background
+   * REASON: Optimistic updates improve perceived performance by updating UI immediately,
+   * then rolling back on failure instead of waiting for slow IndexedDB operations
    */
   const updateSettings = useCallback(
     async (changes: Partial<Omit<Settings, 'id'>>): Promise<void> => {
+      // 1. Capture current state for rollback
+      const previousSettings = settings;
+
+      // 2. Apply optimistic update to local state IMMEDIATELY
+      // NOTE: Deep merge nested objects like voiceSettings, gridLayout, etc.
+      if (settings) {
+        const optimisticSettings: Settings = {
+          ...settings,
+          ...changes,
+          modifiedAt: new Date(),
+        };
+
+        // Deep merge nested objects to preserve unmodified fields
+        if (changes.wordTypeColors) {
+          optimisticSettings.wordTypeColors = {
+            ...settings.wordTypeColors,
+            ...changes.wordTypeColors,
+          };
+        }
+        if (changes.voiceSettings) {
+          optimisticSettings.voiceSettings = {
+            ...settings.voiceSettings,
+            ...changes.voiceSettings,
+          };
+        }
+        if (changes.gridLayout) {
+          optimisticSettings.gridLayout = {
+            ...settings.gridLayout,
+            ...changes.gridLayout,
+          };
+        }
+        if (changes.uiPreferences) {
+          optimisticSettings.uiPreferences = {
+            ...settings.uiPreferences,
+            ...changes.uiPreferences,
+          };
+        }
+
+        setSettings(optimisticSettings);
+      }
+
+      setLoading(true);
+      setError(null);
+
       try {
-        setError(null);
+        // 3. Attempt background save to IndexedDB
         await dataService.updateSettings(changes);
-        // Refresh settings to get updated data
-        const updatedSettings = await dataService.getSettings();
-        setSettings(updatedSettings);
+        // Success - keep optimistic update
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to update settings';
-        setError(errorMessage);
+        // 4. ROLLBACK on failure - restore previous state
+        setSettings(previousSettings);
+        setError('Failed to update settings');
         throw err;
+      } finally {
+        setLoading(false);
       }
     },
-    []
+    [settings]
   );
 
   /**

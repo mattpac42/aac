@@ -424,6 +424,18 @@ export class DataService {
     }
   }
 
+  /**
+   * Get all resources
+   */
+  async getAllResources(): Promise<Resource[]> {
+    try {
+      return await this.db.resources.toArray();
+    } catch (error) {
+      console.error('Error getting all resources:', error);
+      throw new Error('Failed to get all resources: ' + (error as Error).message);
+    }
+  }
+
   // ==================== METADATA OPERATIONS ====================
 
   /**
@@ -496,6 +508,27 @@ export class DataService {
     } catch (error) {
       console.error('Error updating metadata:', error);
       throw new Error('Failed to update metadata: ' + (error as Error).message);
+    }
+  }
+
+  // ==================== UTILITY OPERATIONS ====================
+
+  /**
+   * Clear all data from all object stores
+   * WHY: Enable complete database reset for import replace strategy
+   * REASON: Restore from backup requires clearing existing data first
+   * NOTE: Does not delete settings or metadata (preserves app configuration)
+   */
+  async clearAll(): Promise<void> {
+    try {
+      await Promise.all([
+        this.db.words.clear(),
+        this.db.categories.clear(),
+        this.db.resources.clear(),
+      ]);
+    } catch (error) {
+      console.error('Error clearing all data:', error);
+      throw new Error('Failed to clear all data: ' + (error as Error).message);
     }
   }
 }

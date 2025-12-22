@@ -1,5 +1,6 @@
 {
- "hooks": {
+  "model": "opus",
+  "hooks": {
    "UserPromptSubmit": [
      {
        "matcher": "",

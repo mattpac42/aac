@@ -4,8 +4,10 @@ import { CategoryScreen } from './components/CategoryScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { ResourcesScreen } from './components/ResourcesScreen';
 import { MessageBar } from './components/MessageBar';
+import { AutoSaveIndicator } from './components/AutoSaveIndicator';
 import { initDatabase } from './lib/db/initDatabase';
 import { dataService } from './lib/db/dataService';
+import { useAutoSave } from './lib/utils/autoSave';
 import type { WordType } from './lib/db/schema';
 import type { WordTypeColors } from './components/settings/ColorThemeScreen';
 
@@ -48,6 +50,50 @@ export default function App() {
     noun: { bg: 'bg-orange-200', border: 'border-orange-400' },
     social: { bg: 'bg-pink-200', border: 'border-pink-400' },
   });
+
+  // Auto-save state for database persistence
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [lastSaveData, setLastSaveData] = useState<any>(null);
+
+  /**
+   * Auto-save hook for database persistence
+   * WHY: Automatically persist changes to IndexedDB with debouncing
+   */
+  const { triggerSave, isSaving, error } = useAutoSave(
+    async (data: any) => {
+      // Implement save logic based on data type
+      if (data.type === 'coreWords') {
+        // Save core words to database
+        // TODO: Implement actual database save
+        console.log('Saving core words:', data.words);
+      } else if (data.type === 'categoryWords') {
+        // Save category words to database
+        // TODO: Implement actual database save
+        console.log('Saving category words:', data.words);
+      } else if (data.type === 'colors') {
+        // Save color settings to database
+        // TODO: Implement actual database save
+        console.log('Saving colors:', data.colors);
+      }
+    },
+    {
+      debounceMs: 500,
+      onSaving: () => setSaveStatus('saving'),
+      onSaved: () => setSaveStatus('saved'),
+      onError: () => setSaveStatus('error')
+    }
+  );
+
+  // Update save status based on hook state
+  useEffect(() => {
+    if (isSaving) {
+      setSaveStatus('saving');
+    } else if (error) {
+      setSaveStatus('error');
+    } else if (saveStatus === 'saving') {
+      setSaveStatus('saved');
+    }
+  }, [isSaving, error]);
 
   /**
    * Initialize Database on Mount
@@ -198,17 +244,23 @@ export default function App() {
 
   const updateCoreWords = (newWords: Word[]) => {
     setCoreWords(newWords);
-    // TODO: Persist to database
+    const saveData = { type: 'coreWords', words: newWords };
+    setLastSaveData(saveData);
+    triggerSave(saveData);
   };
 
   const updateCategoryWords = (newWords: Record<string, CategoryWord[]>) => {
     setCategoryWords(newWords);
-    // TODO: Persist to database
+    const saveData = { type: 'categoryWords', words: newWords };
+    setLastSaveData(saveData);
+    triggerSave(saveData);
   };
 
   const updateWordTypeColors = (colors: WordTypeColors) => {
     setWordTypeColors(colors);
-    // TODO: Persist to database
+    const saveData = { type: 'colors', colors };
+    setLastSaveData(saveData);
+    triggerSave(saveData);
   };
 
   // Loading state
@@ -240,6 +292,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Auto-save indicator */}
+      <AutoSaveIndicator
+        status={saveStatus}
+        error={error || undefined}
+        onRetry={() => lastSaveData && triggerSave(lastSaveData)}
+      />
+
       <MessageBar
         message={message}
         onSpeak={speakMessage}

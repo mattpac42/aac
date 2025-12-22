@@ -425,4 +425,327 @@ describe('useDatabase', () => {
       });
     });
   });
+
+  describe('Optimistic Updates', () => {
+    describe('updateWord optimistic behavior', () => {
+      it('should update local state immediately before DB save', async () => {
+        // REASON: Testing optimistic update pattern - UI should update instantly
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        // Delay DB update to verify optimistic update happens first
+        let resolveUpdate: () => void;
+        const updatePromise = new Promise<void>((resolve) => {
+          resolveUpdate = resolve;
+        });
+
+        vi.mocked(dataService.updateWord).mockImplementation(async () => {
+          await updatePromise;
+        });
+
+        const updates = { text: 'hi there' };
+        const updateCall = result.current.updateWord('1', updates);
+
+        // State should update immediately (optimistic)
+        await waitFor(() => {
+          expect(result.current.words[0].text).toBe('hi there');
+        });
+
+        // DB save hasn't happened yet
+        expect(dataService.updateWord).toHaveBeenCalled();
+
+        // Complete the DB save
+        resolveUpdate!();
+        await updateCall;
+      });
+
+      it('should rollback state on DB save failure', async () => {
+        // REASON: Testing rollback mechanism - state must revert on failure
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        const originalText = result.current.words[0].text;
+
+        // Mock DB failure
+        vi.mocked(dataService.updateWord).mockRejectedValue(
+          new Error('DB update failed')
+        );
+
+        const updates = { text: 'new text' };
+
+        try {
+          await result.current.updateWord('1', updates);
+        } catch (err) {
+          // Expected to throw
+        }
+
+        // State should be rolled back to original
+        await waitFor(() => {
+          expect(result.current.words[0].text).toBe(originalText);
+        });
+      });
+
+      it('should set error on rollback', async () => {
+        // REASON: Users need to know when saves fail
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        vi.mocked(dataService.updateWord).mockRejectedValue(
+          new Error('DB update failed')
+        );
+
+        try {
+          await result.current.updateWord('1', { text: 'new text' });
+        } catch (err) {
+          // Expected to throw
+        }
+
+        await waitFor(() => {
+          expect(result.current.error).toBe('Failed to update word');
+        });
+      });
+
+      it('should keep optimistic update on success', async () => {
+        // REASON: Successful saves should maintain the optimistic state
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        vi.mocked(dataService.updateWord).mockResolvedValue();
+
+        const updates = { text: 'updated text' };
+        await result.current.updateWord('1', updates);
+
+        await waitFor(() => {
+          expect(result.current.words[0].text).toBe('updated text');
+        });
+
+        expect(result.current.error).toBeNull();
+      });
+    });
+
+    describe('updateCategory optimistic behavior', () => {
+      it('should update local state immediately before DB save', async () => {
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        let resolveUpdate: () => void;
+        const updatePromise = new Promise<void>((resolve) => {
+          resolveUpdate = resolve;
+        });
+
+        vi.mocked(dataService.updateCategory).mockImplementation(async () => {
+          await updatePromise;
+        });
+
+        const updates = { name: 'New Category Name' };
+        const updateCall = result.current.updateCategory('cat-1', updates);
+
+        // State should update immediately (optimistic)
+        await waitFor(() => {
+          expect(result.current.categories[0].name).toBe('New Category Name');
+        });
+
+        resolveUpdate!();
+        await updateCall;
+      });
+
+      it('should rollback state on DB save failure', async () => {
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        const originalName = result.current.categories[0].name;
+
+        vi.mocked(dataService.updateCategory).mockRejectedValue(
+          new Error('DB update failed')
+        );
+
+        try {
+          await result.current.updateCategory('cat-1', { name: 'New Name' });
+        } catch (err) {
+          // Expected to throw
+        }
+
+        await waitFor(() => {
+          expect(result.current.categories[0].name).toBe(originalName);
+        });
+      });
+    });
+
+    describe('updateSettings optimistic behavior', () => {
+      it('should update local state immediately before DB save', async () => {
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        let resolveUpdate: () => void;
+        const updatePromise = new Promise<void>((resolve) => {
+          resolveUpdate = resolve;
+        });
+
+        vi.mocked(dataService.updateSettings).mockImplementation(async () => {
+          await updatePromise;
+        });
+
+        const updates = { voiceSettings: { rate: 1.5, pitch: 1, volume: 1 } };
+        const updateCall = result.current.updateSettings(updates);
+
+        // State should update immediately (optimistic)
+        await waitFor(() => {
+          expect(result.current.settings?.voiceSettings.rate).toBe(1.5);
+        });
+
+        resolveUpdate!();
+        await updateCall;
+      });
+
+      it('should rollback state on DB save failure', async () => {
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        const originalRate = result.current.settings?.voiceSettings.rate;
+
+        vi.mocked(dataService.updateSettings).mockRejectedValue(
+          new Error('DB update failed')
+        );
+
+        try {
+          await result.current.updateSettings({
+            voiceSettings: { rate: 2.0, pitch: 1, volume: 1 },
+          });
+        } catch (err) {
+          // Expected to throw
+        }
+
+        await waitFor(() => {
+          expect(result.current.settings?.voiceSettings.rate).toBe(originalRate);
+        });
+      });
+    });
+
+    describe('Edge Cases', () => {
+      it('should handle concurrent updates safely', async () => {
+        // REASON: Multiple rapid updates shouldn't corrupt state
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        vi.mocked(dataService.updateWord).mockResolvedValue();
+
+        // Fire multiple updates in quick succession
+        const update1 = result.current.updateWord('1', { text: 'update1' });
+        const update2 = result.current.updateWord('1', { text: 'update2' });
+
+        await Promise.all([update1, update2]);
+
+        // Final state should be the last update
+        await waitFor(() => {
+          expect(result.current.words[0].text).toBe('update2');
+        });
+      });
+
+      it('should handle multiple sequential failures without state corruption', async () => {
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        const originalText = result.current.words[0].text;
+
+        vi.mocked(dataService.updateWord).mockRejectedValue(
+          new Error('DB update failed')
+        );
+
+        // Multiple failures
+        try {
+          await result.current.updateWord('1', { text: 'fail1' });
+        } catch (err) {
+          // Expected
+        }
+
+        try {
+          await result.current.updateWord('1', { text: 'fail2' });
+        } catch (err) {
+          // Expected
+        }
+
+        // State should still be original after multiple rollbacks
+        await waitFor(() => {
+          expect(result.current.words[0].text).toBe(originalText);
+        });
+      });
+
+      it('should handle empty state rollback correctly', async () => {
+        // REASON: Edge case where state might be empty during rollback
+        vi.mocked(dataService.getAllWords).mockResolvedValue([]);
+
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        expect(result.current.words).toEqual([]);
+
+        // Try to update non-existent word
+        vi.mocked(dataService.updateWord).mockRejectedValue(
+          new Error('Word not found')
+        );
+
+        try {
+          await result.current.updateWord('nonexistent', { text: 'test' });
+        } catch (err) {
+          // Expected
+        }
+
+        // State should remain empty (rollback to empty state)
+        expect(result.current.words).toEqual([]);
+      });
+
+      it('should handle null values in updates correctly', async () => {
+        const { result } = renderHook(() => useDatabase());
+
+        await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+        });
+
+        vi.mocked(dataService.updateWord).mockResolvedValue();
+
+        // Update with undefined optional fields (should not crash)
+        await result.current.updateWord('1', {
+          text: 'test',
+          // Other optional fields not provided
+        });
+
+        await waitFor(() => {
+          expect(result.current.words[0].text).toBe('test');
+        });
+      });
+    });
+  });
 });
